@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Number Safe Spot Practice</title>
+  <title>21-4 Numeral Safe Spot</title>
   <style>
     body { background: #111; color: white; font-family: sans-serif; display: flex; justify-content: center; padding-top: 20px; }
     #game { width: 1280px; text-align: center; position: relative; }
@@ -19,17 +19,29 @@
     .comp-view { filter: brightness(0.5); }
     .recap-row { margin: 6px 0; }
     .correct-tile { outline: 4px solid lime; box-shadow: 0 0 10px lime; }
+    /* MODIFIED: Icon is now visible by default */
+    .info-tooltip {
+      margin-left: 5px;
+      font-size: 1.2em;
+      cursor: help;
+      color: #add8e6;
+      display: inline-block;
+      vertical-align: middle;
+    }
   </style>
 </head>
 <body>
   <div id="game">
-    <div id="modeDisplay">👁️ Number Safe Spot Practice</div>
+    <div id="modeDisplay">👁️ 21-4 Numeral Safe Spot</div>
     <div id="timer">⏱️ 40</div>
     <button onclick="startGame()" id="startBtn">Start Game</button>
     <div class="platform-group" id="topRow" style="display:none;"></div>
     <div class="platform-group" id="bottomRow" style="display:none;"></div>
     <div id="chatlog"></div>
-    <div id="controls" style="display:none;"><input id="inputBox" placeholder="Enter briefing" /></div>
+    <div id="controls" style="display:none;">
+      <input id="inputBox" placeholder="Enter briefing" />
+      <span id="infoIcon" class="info-tooltip" title="Tip: For Closed Eye, you only need to type one of the safe spot numbers, not all of them.">❗</span>
+    </div>
     <div id="recap" style="display:none;"></div>
     <div id="result"></div>
     <button onclick="startGame()" id="retryBtn" style="display:none;">🔁 Retry</button>
@@ -54,6 +66,7 @@ const retryBtn = document.getElementById("retryBtn");
 const startBtn = document.getElementById("startBtn");
 const recapBox = document.getElementById("recap");
 const timerDisplay = document.getElementById("timer");
+const infoIcon = document.getElementById("infoIcon");
 
 let mode = "", symbols = [], step = 0;
 let playerTopBrief = "", playerBotBrief = "", summaryTop = "", summaryBot = "", finalAnswer = "";
@@ -80,8 +93,6 @@ function generateSymbols() {
   let base;
 
   if (mode === 'open') {
-    // BUG FIX: The filler pool must not contain the main symbol.
-    // By repeating `...others`, we create a large enough pool of non-main symbols to draw from.
     const filler = shuffle([...others, ...others, ...others]).slice(0, 10);
     base = Array(6).fill(main).concat(filler);
   } else {
@@ -124,6 +135,8 @@ function startGame() {
 
   mode = Math.random() < 0.5 ? "open" : "closed";
   modeDisplay.textContent = `👁️ Current Mode: ${mode === 'open' ? "Open Eye" : "Closed Eye"}`;
+  
+  // REMOVED: Logic to show/hide icon is no longer needed here.
 
   generateSymbols();
   assignVisibility();
@@ -157,9 +170,13 @@ function renderRow(row, indices) {
 }
 
 function updatePlaceholder() {
-  if (step <= 1) inputBox.placeholder = "Enter briefing (e.g., x1 / 4x / xx / 82)";
-  else if (step <= 3) inputBox.placeholder = "Enter summary (e.g., 1 2 3 4)";
-  else inputBox.placeholder = "Enter final answer";
+  if (step <= 1) {
+    inputBox.placeholder = "Enter briefing (e.g., x1 / 4x / xx / 82)";
+  } else if (step <= 3) {
+    inputBox.placeholder = "Enter summary (e.g., 1 2 3 4)";
+  } else {
+    inputBox.placeholder = "Enter final answer";
+  }
 }
 
 function formatBrief(indices, visibleSet) {
@@ -202,7 +219,8 @@ function handleInput(value) {
       judge();
       recapImages();
       retryBtn.style.display = "inline-block";
-      clearInterval(timer); inputBox.disabled = true; break;
+      clearInterval(timer); inputBox.disabled = true;
+      break;
   }
   step++; inputBox.value = ''; updatePlaceholder();
 }
