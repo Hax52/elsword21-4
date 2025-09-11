@@ -48,7 +48,6 @@
 <script>
 const TOTAL_PLATFORMS = 16;
 const PLATFORMS_PER_FLOOR = 8;
-const PLAYER_VISIBLE_PER_FLOOR = 4;
 
 const SYMBOLS = ["Ⅰ","Ⅱ","Ⅲ","Ⅳ","Ⅴ","Ⅵ","Ⅶ","Ⅷ"];
 const SYMBOL_TO_NUM = { "Ⅰ":"1", "Ⅱ":"2", "Ⅲ":"3", "Ⅳ":"4", "Ⅴ":"5", "Ⅵ":"6", "Ⅶ":"7", "Ⅷ":"8" };
@@ -76,14 +75,29 @@ function shuffle(array) {
   return array.sort(() => Math.random() - 0.5);
 }
 
-function assignVisibility() {
-  const topIndices = shuffle([...Array(PLATFORMS_PER_FLOOR).keys()]);
-  playerTopIdx = topIndices.slice(0, PLAYER_VISIBLE_PER_FLOOR);
-  compTopIdx = topIndices.slice(PLAYER_VISIBLE_PER_FLOOR);
+// Helper function to get a random integer within a range
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
+// ==========================================================
+// MODIFIED FUNCTION: Visibility on each floor is now independent
+// ==========================================================
+function assignVisibility() {
+  // For each floor, player sees a random number of platforms between 2 and 6.
+  // This ensures both player and computer see at least 2 platforms per floor.
+  const topCount = getRandomInt(2, 6);
+  const botCount = getRandomInt(2, 6);
+
+  // Top Floor Assignment
+  const topIndices = shuffle([...Array(PLATFORMS_PER_FLOOR).keys()]);
+  playerTopIdx = topIndices.slice(0, topCount);
+  compTopIdx = topIndices.slice(topCount);
+
+  // Bottom Floor Assignment
   const bottomIndices = shuffle([...Array(PLATFORMS_PER_FLOOR).keys()].map(i => i + PLATFORMS_PER_FLOOR));
-  playerBotIdx = bottomIndices.slice(0, PLAYER_VISIBLE_PER_FLOOR);
-  compBotIdx = bottomIndices.slice(PLAYER_VISIBLE_PER_FLOOR);
+  playerBotIdx = bottomIndices.slice(0, botCount);
+  compBotIdx = bottomIndices.slice(botCount);
 }
 
 function generateSymbols() {
