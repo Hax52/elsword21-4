@@ -6,7 +6,7 @@
   <style>
     body { background: #111; color: white; font-family: sans-serif; display: flex; justify-content: center; padding-top: 20px; }
     #game { width: 1280px; text-align: center; position: relative; }
-    #modeDisplay { font-size: 24px; font-weight: bold; margin-bottom: 20px; }
+    #modeDisplay { font-size: 24px; font-weight: bold; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; }
     #timer { position: absolute; top: 10px; right: 20px; font-size: 22px; color: #ff6666; }
     .platform-group { display: flex; justify-content: center; margin: 10px; gap: 20px; flex-wrap: wrap; }
     .platform { width: 80px; height: 80px; border: 2px solid #555; background-color: #222; display: flex; align-items: center; justify-content: center; }
@@ -31,7 +31,7 @@
 </head>
 <body>
   <div id="game">
-    <div id="modeDisplay">👁️ Numeral Safe Spot</div>
+    <div id="modeDisplay">Numeral Safe Spot Practice</div>
     <div id="timer">⏱️ 40</div>
     <button onclick="startGame()" id="startBtn">Start Game</button>
     <div class="platform-group" id="topRow" style="display:none;"></div>
@@ -116,7 +116,7 @@ function startTimer() {
     timerDisplay.textContent = `⏱️ ${timeLeft}`;
     if (timeLeft <= 0) {
       clearInterval(timer);
-      resultBox.innerHTML = "⏰ Time's up! Marked as incorrect.";
+      resultBox.innerHTML = "⏰ Time's up!";
       inputBox.disabled = true;
       retryBtn.style.display = "inline-block";
     }
@@ -139,7 +139,12 @@ function startGame() {
   startBtn.style.display = "none";
 
   mode = Math.random() < 0.5 ? "open" : "closed";
-  modeDisplay.textContent = `👁️ Current Mode: ${mode === 'open' ? "Open Eye" : "Closed Eye"}`;
+  
+  // ==========================================================
+  // MODIFIED: Displays an image for the current mode
+  // ==========================================================
+  const modeImageSrc = mode === 'open' ? 'open.png' : 'close.png';
+  modeDisplay.innerHTML = `Current Status: <img src="${modeImageSrc}" alt="${mode} eye mode" style="height: 40px; vertical-align: middle; margin-left: 10px;">`;
 
   generateSymbols();
   assignVisibility();
@@ -172,9 +177,6 @@ function renderRow(row, indices) {
   });
 }
 
-// ==========================================================
-// MODIFIED FUNCTION: Provides clearer placeholder text
-// ==========================================================
 function updatePlaceholder() {
   if (step <= 1) {
     inputBox.placeholder = "Enter briefing (e.g., x1 / 4x / xx / 82)";
