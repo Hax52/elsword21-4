@@ -75,26 +75,18 @@ function shuffle(array) {
   return array.sort(() => Math.random() - 0.5);
 }
 
-// Helper function to get a random integer within a range
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// ==========================================================
-// MODIFIED FUNCTION: Visibility on each floor is now independent
-// ==========================================================
 function assignVisibility() {
-  // For each floor, player sees a random number of platforms between 2 and 6.
-  // This ensures both player and computer see at least 2 platforms per floor.
   const topCount = getRandomInt(2, 6);
   const botCount = getRandomInt(2, 6);
 
-  // Top Floor Assignment
   const topIndices = shuffle([...Array(PLATFORMS_PER_FLOOR).keys()]);
   playerTopIdx = topIndices.slice(0, topCount);
   compTopIdx = topIndices.slice(topCount);
 
-  // Bottom Floor Assignment
   const bottomIndices = shuffle([...Array(PLATFORMS_PER_FLOOR).keys()].map(i => i + PLATFORMS_PER_FLOOR));
   playerBotIdx = bottomIndices.slice(0, botCount);
   compBotIdx = bottomIndices.slice(botCount);
@@ -180,11 +172,16 @@ function renderRow(row, indices) {
   });
 }
 
+// ==========================================================
+// MODIFIED FUNCTION: Provides clearer placeholder text
+// ==========================================================
 function updatePlaceholder() {
   if (step <= 1) {
     inputBox.placeholder = "Enter briefing (e.g., x1 / 4x / xx / 82)";
-  } else if (step <= 3) {
-    inputBox.placeholder = "Enter summary (e.g., 1 2 3 4)";
+  } else if (step === 2) {
+    inputBox.placeholder = "Gather numbers (Top)";
+  } else if (step === 3) {
+    inputBox.placeholder = "Gather numbers (Bottom)";
   } else {
     inputBox.placeholder = "Enter final answer";
   }
@@ -223,8 +220,8 @@ function handleInput(value) {
       chatlog.innerHTML += `<div><strong>Me (Bottom Floor):</strong> ${value}</div>`;
       chatlog.innerHTML += `<div><strong>Computer (Bottom Floor):</strong> ${formatBrief(botFloorIndices, compBotIdx)}</div>`;
       break;
-    case 2: summaryTop = value; chatlog.innerHTML += `<div><strong>Me (Top Floor Summary):</strong> ${value}</div>`; break;
-    case 3: summaryBot = value; chatlog.innerHTML += `<div><strong>Me (Bottom Floor Summary):</strong> ${value}</div>`; break;
+    case 2: summaryTop = value; chatlog.innerHTML += `<div><strong>Top Floor Gathered Numbers:</strong> ${value}</div>`; break;
+    case 3: summaryBot = value; chatlog.innerHTML += `<div><strong>Bottom Floor Gathered Numbers:</strong> ${value}</div>`; break;
     case 4:
       finalAnswer = value;
       judge();
