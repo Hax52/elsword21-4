@@ -27,6 +27,36 @@
       display: inline-block;
       vertical-align: middle;
     }
+    .action-btn {
+      padding: 12px 30px;
+      font-size: 16px;
+      font-weight: bold;
+      border: 2px solid #555;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .action-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    #standOnBtn:not(:disabled) {
+      background-color: #2e7d32;
+      color: white;
+      border-color: #4caf50;
+    }
+    #standOnBtn:not(:disabled):hover {
+      background-color: #4caf50;
+    }
+    #avoidBtn:not(:disabled) {
+      background-color: #c62828;
+      color: white;
+      border-color: #f44336;
+    }
+    #avoidBtn:not(:disabled):hover {
+      background-color: #f44336;
+    }
+    #actionButtons { margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -39,7 +69,11 @@
     <div id="chatlog"></div>
     <div id="controls" style="display:none;">
       <input id="inputBox" placeholder="Enter briefing" />
-      <span id="infoIcon" class="info-tooltip" title="Tip:&#10;- You don't need to type the exact format as what shown, what matter is the result&#10;- For Closed Eye, you only need to type one of the safe spot numbers, not all of them.">❗</span>
+      <span id="infoIcon" class="info-tooltip" title="Tip:&#10;- You don't need to type the exact format as what shown, what matter is the result&#10;- For Final answer, type the number that appears the most, then click Stand On (Open Eye) or Avoid (Closed Eye).">❗</span>
+      <div id="actionButtons">
+        <button id="standOnBtn" class="action-btn" disabled onclick="submitFinal('stand')">Stand On</button>
+        <button id="avoidBtn" class="action-btn" disabled onclick="submitFinal('avoid')">Avoid</button>
+      </div>
     </div>
     <div id="recap" style="display:none;"></div>
     <div id="result"></div>
@@ -65,9 +99,11 @@ const startBtn = document.getElementById("startBtn");
 const recapBox = document.getElementById("recap");
 const timerDisplay = document.getElementById("timer");
 const infoIcon = document.getElementById("infoIcon");
+const standOnBtn = document.getElementById("standOnBtn");
+const avoidBtn = document.getElementById("avoidBtn");
 
 let mode = "", symbols = [], step = 0;
-let playerTopBrief = "", playerBotBrief = "", summaryTop = "", summaryBot = "", finalAnswer = "";
+let playerTopBrief = "", playerBotBrief = "", summaryTop = "", summaryBot = "", finalAnswer = "", finalAction = "";
 let playerTopIdx = [], playerBotIdx = [], compTopIdx = [], compBotIdx = [];
 let timer = null, timeLeft = 40;
 
@@ -111,6 +147,8 @@ function startTimer() {
       clearInterval(timer);
       resultBox.innerHTML = "⏰ Time's up!";
       inputBox.disabled = true;
+      standOnBtn.disabled = true;
+      avoidBtn.disabled = true;
       retryBtn.style.display = "inline-block";
     }
   }, 1000);
@@ -119,7 +157,7 @@ function startTimer() {
 function startGame() {
   clearInterval(timer);
   step = 0;
-  playerTopBrief = playerBotBrief = summaryTop = summaryBot = finalAnswer = "";
+  playerTopBrief = playerBotBrief = summaryTop = summaryBot = finalAnswer = finalAction = "";
   symbols = [];
   chatlog.innerHTML = '';
   resultBox.innerHTML = '';
@@ -130,6 +168,8 @@ function startGame() {
   retryBtn.style.display = "none";
   controls.style.display = "block";
   startBtn.style.display = "none";
+  standOnBtn.disabled = true;
+  avoidBtn.disabled = true;
 
   mode = Math.random() < 0.5 ? "open" : "closed";
 
@@ -175,8 +215,13 @@ function updatePlaceholder() {
   } else if (step === 3) {
     inputBox.placeholder = "Gather numbers (Bottom)";
   } else {
-    inputBox.placeholder = "Enter final answer";
+    inputBox.placeholder = "Type the number, then click Stand On or Avoid";
   }
+
+  // Action buttons only enabled at step 4
+  const enabled = step === 4;
+  standOnBtn.disabled = !enabled;
+  avoidBtn.disabled = !enabled;
 }
 
 function formatBrief(indices, visibleSet) {
@@ -189,6 +234,7 @@ function formatBrief(indices, visibleSet) {
 
 function handleInput(value) {
   if (!value.trim()) return;
+  if (step === 4) return; // At step 4, submission happens via the action buttons
   const topFloorIndices = [...Array(PLATFORMS_PER_FLOOR).keys()];
   const botFloorIndices = topFloorIndices.map(i => i + PLATFORMS_PER_FLOOR);
 
@@ -205,15 +251,31 @@ function handleInput(value) {
       break;
     case 2: summaryTop = value; chatlog.innerHTML += `<div><strong>Top Floor Gathered Numbers:</strong> ${value}</div>`; break;
     case 3: summaryBot = value; chatlog.innerHTML += `<div><strong>Bottom Floor Gathered Numbers:</strong> ${value}</div>`; break;
-    case 4:
-      finalAnswer = value;
-      judge();
-      recapImages();
-      retryBtn.style.display = "inline-block";
-      clearInterval(timer); inputBox.disabled = true;
-      break;
   }
   step++; inputBox.value = ''; updatePlaceholder();
+}
+
+function submitFinal(action) {
+  if (step !== 4) return;
+  const value = inputBox.value.trim();
+  if (!value) {
+    resultBox.innerHTML = "⚠️ Please type the main number first.";
+    return;
+  }
+
+  finalAnswer = value;
+  finalAction = action;
+  const actionLabel = action === 'stand' ? 'Stand On' : 'Avoid';
+  chatlog.innerHTML += `<div><strong>Final Answer:</strong> ${value} → ${actionLabel}</div>`;
+
+  judge();
+  recapImages();
+  retryBtn.style.display = "inline-block";
+  clearInterval(timer);
+  inputBox.disabled = true;
+  standOnBtn.disabled = true;
+  avoidBtn.disabled = true;
+  step++;
 }
 
 function judge() {
@@ -225,25 +287,26 @@ function judge() {
   const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
   const [mainNumber, mainCount] = sorted[0];
 
-  if (mode === 'open') {
-    if (mainCount !== 6) {
-      resultBox.innerHTML = `❌ Board Error! (Main number appeared ${mainCount} times, not 6)`;
-      return;
-    }
-    resultBox.innerHTML = finalAnswer === mainNumber
-      ? `✅ Correct! The safe spot was ${mainNumber}`
-      : `❌ Incorrect! The safe spot was ${mainNumber}`;
-  } else { // closed eye
-    const safeNumbers = Object.keys(counts).filter(num => num !== mainNumber);
-    if (mainCount !== 6) {
-      resultBox.innerHTML = `❌ Board Error! (Main number appeared ${mainCount} times, not 6)`;
-      return;
-    }
-    if (safeNumbers.includes(finalAnswer)) {
-        resultBox.innerHTML = `✅ Correct (Closed Eye)! '${finalAnswer}' was one of the safe spots.`;
-    } else {
-        resultBox.innerHTML = `❌ Incorrect! '${finalAnswer}' was not a safe spot. The safe spots were ${safeNumbers.join(', ')}.`;
-    }
+  if (mainCount !== 6) {
+    resultBox.innerHTML = `❌ Board Error! (Main number appeared ${mainCount} times, not 6)`;
+    return;
+  }
+
+  // The only acceptable typed number is the main (most-appeared) number
+  if (finalAnswer !== mainNumber) {
+    resultBox.innerHTML = `❌ Incorrect! The main number was ${mainNumber}, not '${finalAnswer}'.`;
+    return;
+  }
+
+  // Correct action depends on mode: Open Eye = Stand On, Closed Eye = Avoid
+  const correctAction = mode === 'open' ? 'stand' : 'avoid';
+  const chosenLabel = finalAction === 'stand' ? 'Stand On' : 'Avoid';
+  const correctLabel = correctAction === 'stand' ? 'Stand On' : 'Avoid';
+
+  if (finalAction === correctAction) {
+    resultBox.innerHTML = `✅ Correct! Main number is ${mainNumber} — ${correctLabel}.`;
+  } else {
+    resultBox.innerHTML = `❌ Wrong action! Main number ${mainNumber} is correct, but in ${mode === 'open' ? 'Open Eye' : 'Closed Eye'} you should <u>${correctLabel}</u>, not ${chosenLabel}.`;
   }
 }
 
