@@ -103,7 +103,7 @@ const standOnBtn = document.getElementById("standOnBtn");
 const avoidBtn = document.getElementById("avoidBtn");
 
 let mode = "", symbols = [], step = 0;
-let playerTopBrief = "", playerBotBrief = "", summaryTop = "", summaryBot = "", finalAnswer = "", finalAction = "";
+let playerTopBrief = "", playerBotBrief = "", gatheredNumbers = "", finalAnswer = "", finalAction = "";
 let playerTopIdx = [], playerBotIdx = [], compTopIdx = [], compBotIdx = [];
 let timer = null, timeLeft = 40;
 
@@ -157,7 +157,7 @@ function startTimer() {
 function startGame() {
   clearInterval(timer);
   step = 0;
-  playerTopBrief = playerBotBrief = summaryTop = summaryBot = finalAnswer = finalAction = "";
+  playerTopBrief = playerBotBrief = gatheredNumbers = finalAnswer = finalAction = "";
   symbols = [];
   chatlog.innerHTML = '';
   resultBox.innerHTML = '';
@@ -211,15 +211,13 @@ function updatePlaceholder() {
   if (step <= 1) {
     inputBox.placeholder = "Enter briefing (e.g., x14 x82)";
   } else if (step === 2) {
-    inputBox.placeholder = "Gather numbers (Top)";
-  } else if (step === 3) {
-    inputBox.placeholder = "Gather numbers (Bottom)";
+    inputBox.placeholder = "Gather numbers";
   } else {
     inputBox.placeholder = "Type the number, then click Stand On or Avoid";
   }
 
-  // Action buttons only enabled at step 4
-  const enabled = step === 4;
+  // Action buttons only enabled at the final-answer step (step 3)
+  const enabled = step === 3;
   standOnBtn.disabled = !enabled;
   avoidBtn.disabled = !enabled;
 }
@@ -234,7 +232,7 @@ function formatBrief(indices, visibleSet) {
 
 function handleInput(value) {
   if (!value.trim()) return;
-  if (step === 4) return; // At step 4, submission happens via the action buttons
+  if (step === 3) return; // At step 3, submission happens via the action buttons
   const topFloorIndices = [...Array(PLATFORMS_PER_FLOOR).keys()];
   const botFloorIndices = topFloorIndices.map(i => i + PLATFORMS_PER_FLOOR);
 
@@ -249,17 +247,19 @@ function handleInput(value) {
       chatlog.innerHTML += `<div><strong>Me (Bottom Floor):</strong> ${value}</div>`;
       chatlog.innerHTML += `<div><strong>Computer (Bottom Floor):</strong> ${formatBrief(botFloorIndices, compBotIdx)}</div>`;
       break;
-    case 2: summaryTop = value; chatlog.innerHTML += `<div><strong>Top Floor Gathered Numbers:</strong> ${value}</div>`; break;
-    case 3: summaryBot = value; chatlog.innerHTML += `<div><strong>Bottom Floor Gathered Numbers:</strong> ${value}</div>`; break;
+    case 2:
+      gatheredNumbers = value;
+      chatlog.innerHTML += `<div><strong>Gathered Numbers:</strong> ${value}</div>`;
+      break;
   }
   step++; inputBox.value = ''; updatePlaceholder();
 }
 
 function submitFinal(action) {
-  if (step !== 4) return;
+  if (step !== 3) return;
   const value = inputBox.value.trim();
   if (!value) {
-    resultBox.innerHTML = "⚠️ Please type the main number first.";
+    resultBox.innerHTML = "⚠️ Please type the number first.";
     return;
   }
 
@@ -288,13 +288,13 @@ function judge() {
   const [mainNumber, mainCount] = sorted[0];
 
   if (mainCount !== 6) {
-    resultBox.innerHTML = `❌ Board Error! (Main number appeared ${mainCount} times, not 6)`;
+    resultBox.innerHTML = `❌ Board Error! (Number appeared ${mainCount} times, not 6)`;
     return;
   }
 
   // The only acceptable typed number is the main (most-appeared) number
   if (finalAnswer !== mainNumber) {
-    resultBox.innerHTML = `❌ Incorrect! The main number was ${mainNumber}, not '${finalAnswer}'.`;
+    resultBox.innerHTML = `❌ Incorrect! The Number appeared the most was ${mainNumber}, not '${finalAnswer}'.`;
     return;
   }
 
@@ -304,9 +304,9 @@ function judge() {
   const correctLabel = correctAction === 'stand' ? 'Stand On' : 'Avoid';
 
   if (finalAction === correctAction) {
-    resultBox.innerHTML = `✅ Correct! Main number is ${mainNumber} — ${correctLabel}.`;
+    resultBox.innerHTML = `✅ Correct! Number is ${mainNumber} — ${correctLabel}.`;
   } else {
-    resultBox.innerHTML = `❌ Wrong action! Main number ${mainNumber} is correct, but in ${mode === 'open' ? 'Open Eye' : 'Closed Eye'} you should <u>${correctLabel}</u>, not ${chosenLabel}.`;
+    resultBox.innerHTML = `❌ Incorrect! Number ${mainNumber} is correct, but not ${chosenLabel}.`;
   }
 }
 
