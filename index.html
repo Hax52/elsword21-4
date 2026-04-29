@@ -304,7 +304,7 @@ function judge() {
   const correctLabel = correctAction === 'stand' ? 'Stand On' : 'Avoid';
 
   if (finalAction === correctAction) {
-    resultBox.innerHTML = `✅ Correct! Number is ${mainNumber} — ${correctLabel}.`;
+    resultBox.innerHTML = `✅ Correct! Number appeared the most is ${mainNumber} — ${correctLabel}.`;
   } else {
     resultBox.innerHTML = `❌ Incorrect! Number ${mainNumber} is correct, but not ${chosenLabel}.`;
   }
