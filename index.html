@@ -46,8 +46,8 @@
     <button onclick="startGame()" id="retryBtn" style="display:none;">🔁 Retry</button>
   </div>
 <script>
-const TOTAL_PLATFORMS = 16;
-const PLATFORMS_PER_FLOOR = 8;
+const TOTAL_PLATFORMS = 12;
+const PLATFORMS_PER_FLOOR = 6;
 
 const SYMBOLS = ["Ⅰ","Ⅱ","Ⅲ","Ⅳ","Ⅴ","Ⅵ","Ⅶ","Ⅷ"];
 const SYMBOL_TO_NUM = { "Ⅰ":"1", "Ⅱ":"2", "Ⅲ":"3", "Ⅳ":"4", "Ⅴ":"5", "Ⅵ":"6", "Ⅶ":"7", "Ⅷ":"8" };
@@ -80,8 +80,8 @@ function getRandomInt(min, max) {
 }
 
 function assignVisibility() {
-  const topCount = getRandomInt(2, 6);
-  const botCount = getRandomInt(2, 6);
+  const topCount = getRandomInt(2, 4);
+  const botCount = getRandomInt(2, 4);
 
   const topIndices = shuffle([...Array(PLATFORMS_PER_FLOOR).keys()]);
   playerTopIdx = topIndices.slice(0, topCount);
@@ -95,15 +95,8 @@ function assignVisibility() {
 function generateSymbols() {
   const main = SYMBOLS[Math.floor(Math.random() * 8)];
   const others = SYMBOLS.filter(s => s !== main);
-  let base;
-
-  if (mode === 'open') {
-    const filler = shuffle([...others, ...others, ...others]).slice(0, 10);
-    base = Array(6).fill(main).concat(filler);
-  } else {
-    const filler = shuffle(others).slice(0, 6);
-    base = Array(10).fill(main).concat(filler);
-  }
+  const filler = shuffle([...others, ...others]).slice(0, 6);
+  const base = Array(6).fill(main).concat(filler);
   symbols = shuffle(base.slice(0, TOTAL_PLATFORMS));
 }
 
@@ -139,10 +132,7 @@ function startGame() {
   startBtn.style.display = "none";
 
   mode = Math.random() < 0.5 ? "open" : "closed";
-  
-  // ==========================================================
-  // MODIFIED: Displays an image for the current mode
-  // ==========================================================
+
   const modeImageSrc = mode === 'open' ? 'open.png' : 'close.png';
   modeDisplay.innerHTML = `Current Status: <img src="${modeImageSrc}" alt="${mode} eye mode" style="height: 40px; vertical-align: middle; margin-left: 10px;">`;
 
@@ -179,7 +169,7 @@ function renderRow(row, indices) {
 
 function updatePlaceholder() {
   if (step <= 1) {
-    inputBox.placeholder = "Enter briefing (e.g., x1 / 4x / xx / 82)";
+    inputBox.placeholder = "Enter briefing (e.g., x14 x82)";
   } else if (step === 2) {
     inputBox.placeholder = "Gather numbers (Top)";
   } else if (step === 3) {
@@ -191,19 +181,10 @@ function updatePlaceholder() {
 
 function formatBrief(indices, visibleSet) {
   const sortedIndices = [...indices].sort((a, b) => a - b);
-  const briefingPairs = [];
-
-  for (let i = 0; i < sortedIndices.length; i += 2) {
-    const idx1 = sortedIndices[i];
-    const idx2 = sortedIndices[i + 1];
-
-    const char1 = visibleSet.includes(idx1) ? SYMBOL_TO_NUM[symbols[idx1]] : 'x';
-    const char2 = visibleSet.includes(idx2) ? SYMBOL_TO_NUM[symbols[idx2]] : 'x';
-    
-    briefingPairs.push(char1 + char2);
-  }
-
-  return briefingPairs.join(' / ');
+  const chars = sortedIndices.map(idx =>
+    visibleSet.includes(idx) ? SYMBOL_TO_NUM[symbols[idx]] : 'x'
+  );
+  return chars.slice(0, 3).join('') + ' ' + chars.slice(3).join('');
 }
 
 function handleInput(value) {
@@ -254,8 +235,8 @@ function judge() {
       : `❌ Incorrect! The safe spot was ${mainNumber}`;
   } else { // closed eye
     const safeNumbers = Object.keys(counts).filter(num => num !== mainNumber);
-    if (mainCount !== 10) {
-      resultBox.innerHTML = `❌ Board Error! (Main number appeared ${mainCount} times, not 10)`;
+    if (mainCount !== 6) {
+      resultBox.innerHTML = `❌ Board Error! (Main number appeared ${mainCount} times, not 6)`;
       return;
     }
     if (safeNumbers.includes(finalAnswer)) {
